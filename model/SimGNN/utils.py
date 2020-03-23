@@ -3,7 +3,6 @@
 import json
 import math
 from texttable import Texttable
-from plot_confusion_matrix import *
 
 def tab_printer(args):
     """

@@ -8,6 +8,7 @@ from tqdm import tqdm, trange
 from torch_geometric.nn import GCNConv
 from layers import AttentionModule, TenorNetworkModule
 from utils import process_pair, calculate_loss, calculate_normalized_ged
+from plot_confusion_matrix import plot_confusion_matrix
 
 class SimGNN(torch.nn.Module):
     """
@@ -191,9 +192,11 @@ class SimGNNTrainer(object):
         new_data["features_1"] = features_1
         new_data["features_2"] = features_2
 
-        norm_ged = data["ged"]/(0.5*(len(data["labels_1"])+len(data["labels_2"])))
+        #norm_ged = data["ged"]/(0.5*(len(data["labels_1"])+len(data["labels_2"])))
+        ged = data["ged"]
 
-        new_data["target"] = torch.from_numpy(np.exp(-norm_ged).reshape(1, 1)).view(-1).float()
+        #new_data["target"] = torch.from_numpy(np.exp(-norm_ged).reshape(1, 1)).view(-1).float()
+        new_data["target"] = torch.from_numpy(np.array(ged).reshape(1, 1)).view(-1).float()
         return new_data
 
     def process_batch(self, batch):
@@ -209,7 +212,8 @@ class SimGNNTrainer(object):
             data = self.transfer_to_torch(data)
             target = data["target"]
             prediction = self.model(data)
-            losses = losses + torch.nn.functional.mse_loss(data["target"], prediction)
+            #losses = losses + torch.nn.functional.mse_loss(data["target"], prediction)
+            losses = lossses + torch.nn.BCEWithLogitsLoss(data["target"], prediction)
         losses.backward(retain_graph=True)
         self.optimizer.step()
         loss = losses.item()
@@ -246,6 +250,8 @@ class SimGNNTrainer(object):
         self.model.eval()
         self.scores = []
         self.ground_truth = []
+        preds = []
+        truths = []
         for graph_pair in tqdm(self.testing_graphs):
             data = process_pair(graph_pair)
             self.ground_truth.append(calculate_normalized_ged(data))
@@ -253,7 +259,11 @@ class SimGNNTrainer(object):
             target = data["target"]
             prediction = self.model(data)
             self.scores.append(calculate_loss(prediction, target))
+            
+            preds.append(0 if prediction.item()<0.5 else 1)
+            truths.append(data["ged"])
         self.print_evaluation()
+        plot_confusion_matrix(np.array(truths), np.array(preds), np.array([0, 1]), title='SimGNN confusion matrix')
 
     def print_evaluation(self):
         """
