@@ -213,7 +213,7 @@ class SimGNNTrainer(object):
             target = data["target"]
             prediction = self.model(data)
             #losses = losses + torch.nn.functional.mse_loss(data["target"], prediction)
-            losses = lossses + torch.nn.BCEWithLogitsLoss(data["target"], prediction)
+            losses = losses + torch.nn.functional.mse_loss(data["target"], prediction)
         losses.backward(retain_graph=True)
         self.optimizer.step()
         loss = losses.item()
@@ -261,7 +261,7 @@ class SimGNNTrainer(object):
             self.scores.append(calculate_loss(prediction, target))
             
             preds.append(0 if prediction.item()<0.5 else 1)
-            truths.append(data["ged"])
+            truths.append(int(data["target"].item()))
         self.print_evaluation()
         plot_confusion_matrix(np.array(truths), np.array(preds), np.array([0, 1]), title='SimGNN confusion matrix')
 
