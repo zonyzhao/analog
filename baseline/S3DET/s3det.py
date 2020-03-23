@@ -12,9 +12,11 @@ from plot_confusion_matrix import *
 def subgraph_extract(g, v1, v2):
     """ extract subgraph for device pair
     """
-    thres = 4
+    thres_min = 4
+    thres_max = 8
     rad = math.ceil(nx.shortest_path_length(g, source=v1, target=v2) / 2)
-    rad = max(rad, thres)
+    rad = max(rad, thres_min)
+    rad = min(rad, thres_max)
     
     nodes1 = list(nx.single_source_shortest_path_length(g, v1, cutoff=rad).keys())
     nodes2 = list(nx.single_source_shortest_path_length(g, v2, cutoff=rad).keys())
